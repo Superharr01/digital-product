@@ -58,13 +58,13 @@
         </div>
       </div>
 
-      <!-- Replace src with your hosted screenshot/video thumbnail when ready -->
-      <div class="rounded-lg bg-white/5 p-6">
-        <div class="text-sm text-gray-300 mb-2">Sneak peek</div>
-        <div class="w-full h-40 bg-gradient-to-br from-[#0b2540] to-[#08172F] rounded-lg flex items-center justify-center">
-          <div class="text-gray-200">Preview images & module list here</div>
-        </div>
-      </div>
+    <!-- Sneak Peek with popup -->
+<div onclick="openPreview()" class="cursor-pointer rounded-lg bg-white/5 p-6 hover:opacity-80 transition">
+  <div class="text-sm text-gray-300 mb-2">Sneak peek</div>
+  <div class="w-full h-40 bg-gradient-to-br from-[#0b2540] to-[#08172F] rounded-lg flex items-center justify-center">
+    <div class="text-gray-200">Click to view preview slides</div>
+  </div>
+</div>
     </div>
   </section>
 
@@ -110,6 +110,54 @@
     </div>
   </form>
   -->
+
+  <!-- Hidden Modal -->
+<div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+  <div class="bg-[#08172F] p-4 rounded-lg max-w-lg w-full relative">
+    <button onclick="closePreview()" class="absolute top-2 right-2 text-white text-lg font-bold">X</button>
+    <div id="slideContainer" class="text-center">
+      <img src="slide1.png" id="slideImage" class="max-w-full rounded-lg mx-auto">
+      <p id="slideCaption" class="mt-2 text-gray-300"></p>
+    </div>
+    <div class="flex justify-between mt-4">
+      <button onclick="prevSlide()" class="bg-gray-700 text-white px-4 py-2 rounded">Previous</button>
+      <button onclick="nextSlide()" class="bg-gray-700 text-white px-4 py-2 rounded">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let slides = [
+  {src: "slide1.png", caption: "Module 1 Overview"},
+  {src: "slide2.png", caption: "Module 2 Breakdown"},
+  {src: "slide3.png", caption: "Module 3 Templates"}
+];
+let currentSlide = 0;
+
+function openPreview() {
+  document.getElementById('previewModal').classList.remove('hidden');
+  showSlide(currentSlide);
+}
+
+function closePreview() {
+  document.getElementById('previewModal').classList.add('hidden');
+}
+
+function showSlide(index) {
+  document.getElementById('slideImage').src = slides[index].src;
+  document.getElementById('slideCaption').textContent = slides[index].caption;
+}
+
+function nextSlide() {
+  currentSlide = (currentSlide + 1) % slides.length;
+  showSlide(currentSlide);
+}
+
+function prevSlide() {
+  currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+  showSlide(currentSlide);
+}
+</script>
 
 </body>
 </html>
