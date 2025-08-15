@@ -59,22 +59,23 @@
       </div>
 
     <!-- Sneak Peek with popup -->
-<!-- Sneak Peek with faded preview -->
+<!-- Sneak Peek with blurred overlay -->
 <div onclick="openPreview()" class="cursor-pointer rounded-lg bg-white/5 p-6 hover:opacity-90 transition">
   <div class="text-sm text-gray-300 mb-2">Sneak peek</div>
   
-  <!-- First slide preview faded out -->
+  <!-- First slide preview -->
   <div class="relative w-full h-40 rounded-lg overflow-hidden shadow-lg">
-    <img src="slide1.png" alt="Preview slide 1" class="w-full h-full object-cover opacity-50 hover:opacity-70 transition-opacity duration-300">
-    
-    <!-- Overlay -->
-    <div class="absolute inset-0 flex items-center justify-center">
-      <span class="bg-[#08172F]/80 text-white px-4 py-2 rounded-lg font-semibold shadow">View More</span>
+    <img src="slide1.png" alt="Preview slide 1" 
+         class="w-full h-full object-contain bg-[#08172F] opacity-50 hover:opacity-70 transition-opacity duration-300">
+
+    <!-- Blurred overlay -->
+    <div class="absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-[#08172F]/40">
+      <span class="text-white px-4 py-2 rounded-lg font-semibold shadow-lg border border-white/30">
+        View More
+      </span>
     </div>
   </div>
 </div>
-    </div>
-  </section>
 
   <!-- VIDEO (optional) -->
   <section id="video" class="py-8 px-6">
