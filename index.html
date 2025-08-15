@@ -59,10 +59,18 @@
       </div>
 
     <!-- Sneak Peek with popup -->
-<div onclick="openPreview()" class="cursor-pointer rounded-lg bg-white/5 p-6 hover:opacity-80 transition">
+<!-- Sneak Peek with faded preview -->
+<div onclick="openPreview()" class="cursor-pointer rounded-lg bg-white/5 p-6 hover:opacity-90 transition">
   <div class="text-sm text-gray-300 mb-2">Sneak peek</div>
-  <div class="w-full h-40 bg-gradient-to-br from-[#0b2540] to-[#08172F] rounded-lg flex items-center justify-center">
-    <div class="text-gray-200">Click to view preview slides</div>
+  
+  <!-- First slide preview faded out -->
+  <div class="relative w-full h-40 rounded-lg overflow-hidden shadow-lg">
+    <img src="slide1.png" alt="Preview slide 1" class="w-full h-full object-cover opacity-50 hover:opacity-70 transition-opacity duration-300">
+    
+    <!-- Overlay -->
+    <div class="absolute inset-0 flex items-center justify-center">
+      <span class="bg-[#08172F]/80 text-white px-4 py-2 rounded-lg font-semibold shadow">View More</span>
+    </div>
   </div>
 </div>
     </div>
