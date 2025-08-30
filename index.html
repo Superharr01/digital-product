@@ -117,16 +117,47 @@
     </div>
   </section>
 
-  <!-- Optional: Formspree simple email capture (replace FORM_ID) -->
-  <!--
-  <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" class="max-w-md mx-auto py-6 px-6">
-    <label class="text-sm text-gray-300">Join the waitlist / get updates</label>
-    <div class="mt-2 flex gap-2">
-      <input type="email" name="email" required placeholder="you@example.com" class="flex-1 p-2 rounded bg-white/5 text-white" />
-      <button type="submit" class="bg-white text-[#08172F] px-4 rounded font-semibold">Join</button>
+ <!-- ⭐ Reviews -->
+<section id="reviews" class="py-12 px-6">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold mb-4">Reviews</h2>
+
+    <!-- Leave a review -->
+    <form id="reviewForm" class="space-y-4 bg-white/5 p-6 rounded-xl shadow">
+      <div class="grid md:grid-cols-2 gap-3">
+        <input class="p-3 rounded bg-white/10 w-full" type="text" name="name" placeholder="Your name" required>
+        <input class="p-3 rounded bg-white/10 w-full" type="email" name="email" placeholder="Your email" required>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-3 items-center">
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">Your rating</label>
+          <select name="rating" required class="p-3 rounded bg-white/10 w-full">
+            <option value="5">★★★★★ — Amazing</option>
+            <option value="4">★★★★☆ — Good</option>
+            <option value="3">★★★☆☆ — Okay</option>
+            <option value="2">★★☆☆☆ — Poor</option>
+            <option value="1">★☆☆☆☆ — Bad</option>
+          </select>
+        </div>
+        <div class="text-sm text-gray-400">
+          If you choose **4 or 5★**, please also leave a short comment below.
+        </div>
+      </div>
+
+      <textarea name="comment" rows="3" class="w-full p-3 rounded bg-white/10" placeholder="Your review (required for 4–5★)"></textarea>
+
+      <button type="submit" class="bg-white text-[#08172F] px-6 py-2 rounded-lg font-semibold">Submit review</button>
+      <p id="reviewMsg" class="mt-2 text-sm text-gray-400"></p>
+    </form>
+
+    <!-- Public 4–5★ reviews appear here -->
+    <div class="mt-8">
+      <h3 class="text-xl font-bold mb-3">What customers are saying</h3>
+      <div id="publicReviews" class="grid md:grid-cols-2 gap-4"></div>
     </div>
-  </form>
-  -->
+  </div>
+</section>
 
   <!-- Hidden Modal -->
 <div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
@@ -175,6 +206,92 @@ function prevSlide() {
   showSlide(currentSlide);
 }
 </script>
+<script>
+/* ====== SETTINGS: replace these two ====== */
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxaASgdQ1ssjzOYSUk1HZtO-el7gjAdY0wRz9Y_SIxM65lrC8ClKFn9Gp0v4glpwXBP/exec"; // from Apps Script deploy
+const SHEET_ID    = "https://docs.google.com/spreadsheets/d/1ywHtna9t8V6nt7105qhKhfjs1PEq5temkJS3YzjZbRM/edit?gid=0#gid=0";    // from your sheet URL
+/* ======================================== */
 
+const SHEET_NAME = "Reviews"; // must match tab name
+
+// Submit review to Google Apps Script → Sheet
+const form = document.getElementById("reviewForm");
+const msg  = document.getElementById("reviewMsg");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  // Require a comment if 4–5 stars
+  const fd = new FormData(form);
+  const rating = Number(fd.get("rating") || 0);
+  const comment = (fd.get("comment") || "").trim();
+  if (rating >= 4 && !comment) {
+    msg.textContent = "Please add a short comment for 4–5★ reviews.";
+    return;
+  }
+
+  try {
+    await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: fd,
+      // no-cors avoids CORS errors; we won't read the response body
+      mode: "no-cors"
+    });
+
+    msg.textContent = "Thanks! Your review was submitted.";
+    form.reset();
+    loadReviews(); // refresh public list
+  } catch (err) {
+    msg.textContent = "Something went wrong. Try again in a minute.";
+  }
+});
+
+// Show only 4–5★ reviews publicly
+const FEED_URL =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq` +
+  `?sheet=${encodeURIComponent(SHEET_NAME)}` +
+  `&tqx=out:json&tq=${encodeURIComponent('select * order by A desc')}`;
+
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+}
+
+async function loadReviews() {
+  try {
+    const res  = await fetch(FEED_URL);
+    const text = await res.text();
+
+    // Strip Google Visualization wrapper → JSON
+    const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf(')')));
+    const rows = (json.table.rows || []);
+
+    const container = document.getElementById("publicReviews");
+    container.innerHTML = "";
+
+    rows.forEach(r => {
+      const name    = r.c[1]?.v || "Anonymous";
+      const comment = r.c[3]?.v || "";
+      const rating  = Number(r.c[4]?.v || 0);
+
+      if (rating >= 4 && comment) {
+        const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+        container.innerHTML += `
+          <div class="bg-white/5 p-4 rounded-xl">
+            <div class="text-yellow-400 text-lg">${stars}</div>
+            <p class="mt-2 text-gray-200">${escapeHtml(comment)}</p>
+            <div class="mt-2 text-sm text-gray-400">— ${escapeHtml(name)}</div>
+          </div>`;
+      }
+    });
+  } catch (_) {
+    // silently ignore if sheet not public yet
+  }
+}
+
+// Load public reviews on page open
+loadReviews();
+</script>
 </body>
 </html> 
