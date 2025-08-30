@@ -209,7 +209,7 @@ function prevSlide() {
 <script>
 /* ====== SETTINGS: replace these two ====== */
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxaASgdQ1ssjzOYSUk1HZtO-el7gjAdY0wRz9Y_SIxM65lrC8ClKFn9Gp0v4glpwXBP/exec"; // from Apps Script deploy
-const SHEET_ID    = "https://docs.google.com/spreadsheets/d/1ywHtna9t8V6nt7105qhKhfjs1PEq5temkJS3YzjZbRM/edit?gid=0#gid=0";    // from your sheet URL
+const SHEET_ID    = "1ywHtna9t8V6nt7105qhKhfjs1PEq5temkJS3YzjZbRM";    // from your sheet URL
 /* ======================================== */
 
 const SHEET_NAME = "Reviews"; // must match tab name
@@ -225,9 +225,6 @@ form.addEventListener("submit", async (e) => {
   const fd = new FormData(form);
   const rating = Number(fd.get("rating") || 0);
   const comment = (fd.get("comment") || "").trim();
-  if (rating >= 4 && !comment) {
-    msg.textContent = "Please add a short comment for 4–5★ reviews.";
-    return;
   }
 
   try {
@@ -278,11 +275,12 @@ async function loadReviews() {
       if (rating >= 4 && comment) {
         const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
         container.innerHTML += `
-          <div class="bg-white/5 p-4 rounded-xl">
-            <div class="text-yellow-400 text-lg">${stars}</div>
-            <p class="mt-2 text-gray-200">${escapeHtml(comment)}</p>
-            <div class="mt-2 text-sm text-gray-400">— ${escapeHtml(name)}</div>
-          </div>`;
+         container.innerHTML += `
+  <div class="bg-gray-100 text-gray-800 p-4 rounded-xl shadow">
+    <div class="text-yellow-500 text-lg">${stars}</div>
+    <p class="mt-2">${escapeHtml(comment)}</p>
+    <div class="mt-2 text-sm text-gray-600">— ${escapeHtml(name)}</div>
+  </div>`;
       }
     });
   } catch (_) {
