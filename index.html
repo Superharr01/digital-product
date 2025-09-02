@@ -215,115 +215,124 @@ function prevSlide() {
 }
 </script>
 <script>
-<script>
-/* ====== SETTINGS: replace these two ====== */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxaASgdQ1ssjzOYSUk1HZtO-el7gjAdY0wRz9Y_SIxM65lrC8ClKFn9Gp0v4glpwXBP/exec"; // from Apps Script deploy
-const SHEET_ID    = "1ywHtna9t8V6nt7105qhKhfjs1PEq5temkJS3YzjZbRM";    // from your sheet URL
+/* ====== SETTINGS: replace these two if different ====== */
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxaASgdQ1ssjzOYSUk1HZtO-el7gjAdY0wRz9Y_SIxM65lrC8ClKFn9Gp0v4glpwXBP/exec";
+const SHEET_ID    = "1ywHtna9t8V6nt7105qhKhfjs1PEq5temkJS3YzjZbRM";
 /* ======================================== */
 
-const SHEET_NAME = "Reviews"; // must match tab name
-// Toggle comment/private feedback boxes based on rating
-const ratingSelect = document.getElementById("ratingSelect");
-const commentBox = document.getElementById("commentBox");
-const privateFeedbackBox = document.getElementById("privateFeedbackBox");
+const SHEET_NAME = "Reviews"; // must match your sheet tab name
 
-ratingSelect.addEventListener("change", () => {
-  const rating = Number(ratingSelect.value);
+document.addEventListener("DOMContentLoaded", () => {
+  // Elements
+  const ratingSelect = document.getElementById("ratingSelect");
+  const commentBox = document.getElementById("commentBox");
+  const privateFeedbackBox = document.getElementById("privateFeedbackBox");
+  const form = document.getElementById("reviewForm");
+  const msg = document.getElementById("reviewMsg");
+  const publicContainer = document.getElementById("publicReviews");
 
-  if (rating >= 4) {
-    // Show comment box for 4–5★ reviews
-    commentBox.classList.remove("hidden");
-    privateFeedbackBox.classList.add("hidden");
-  } else if (rating <= 3 && rating > 0) {
-    // Show private feedback for ≤3★ reviews
-    privateFeedbackBox.classList.remove("hidden");
-    commentBox.classList.add("hidden");
-  } else {
-    // Hide everything if nothing selected
-    commentBox.classList.add("hidden");
-    privateFeedbackBox.classList.add("hidden");
-  }
-});
-// Submit review to Google Apps Script → Sheet
-const form = document.getElementById("reviewForm");
-const msg  = document.getElementById("reviewMsg");
+  // Safety: if elements missing, stop
+  if (!ratingSelect || !form || !publicContainer) return;
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const fd = new FormData(form);
-  const rating = Number(fd.get("rating") || 0);
-  const comment = (fd.get("comment") || "").trim();
-  const privateFeedback = (document.getElementById("privateFeedback").value || "").trim();
-
-  try {
-    // If 3 stars or less → mark feedback as PRIVATE
-    if (rating <= 3) {
-      fd.set("comment", "PRIVATE: " + privateFeedback);
+  // Toggle comment / private boxes based on rating selection
+  ratingSelect.addEventListener("change", () => {
+    const val = Number(ratingSelect.value) || 0;
+    if (val >= 4) {
+      commentBox.classList.remove("hidden");
+      privateFeedbackBox.classList.add("hidden");
+    } else if (val > 0 && val <= 3) {
+      privateFeedbackBox.classList.remove("hidden");
+      commentBox.classList.add("hidden");
     } else {
+      commentBox.classList.add("hidden");
+      privateFeedbackBox.classList.add("hidden");
+    }
+  });
+
+  // Form submit handler: sends to Apps Script
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.textContent = "";
+
+    const fd = new FormData(form);
+    const rating = Number(fd.get("rating") || 0);
+    const comment = (fd.get("comment") || "").trim();
+    const privateFeedback = (document.getElementById("privateFeedback").value || "").trim();
+
+    // Put fields into FormData explicitly so Apps Script receives them
+    fd.set("rating", String(rating));
+    if (rating <= 3) {
+      // low rating -> private feedback column, leave public comment blank
+      fd.set("comment", "");
+      fd.set("privateFeedback", privateFeedback);
+    } else {
+      // high rating -> public comment, empty private
       fd.set("comment", comment);
+      fd.set("privateFeedback", "");
     }
 
-    await fetch(WEB_APP_URL, {
-      method: "POST",
-      body: fd,
-      mode: "no-cors" // avoids CORS errors
-    });
+    try {
+      // We use no-cors so request will be sent; response is opaque (can't read it)
+      await fetch(WEB_APP_URL, { method: "POST", body: fd, mode: "no-cors" });
+      msg.textContent = "Thanks! Your review was submitted.";
+      form.reset();
+      commentBox.classList.add("hidden");
+      privateFeedbackBox.classList.add("hidden");
+      loadReviews(); // refresh public list
+    } catch (err) {
+      msg.textContent = "Something went wrong. Try again in a minute.";
+    }
+  });
 
-    msg.textContent = "Thanks! Your review was submitted.";
-    form.reset();
-    document.getElementById("commentBox").classList.add("hidden");
-    document.getElementById("privateFeedbackBox").classList.add("hidden");
-    loadReviews(); // refresh public list
-  } catch (err) {
-    msg.textContent = "Something went wrong. Try again in a minute.";
+  // Public feed URL (Google Visualization)
+  const FEED_URL =
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq` +
+    `?sheet=${encodeURIComponent(SHEET_NAME)}` +
+    `&tqx=out:json&tq=${encodeURIComponent('select * order by A desc')}`;
+
+  function escapeHtml(s) {
+    return (s || "").replace(/[&<>"']/g, m => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[m]));
   }
+
+  // Load and show only public 4–5★ reviews (skips any private feedback rows)
+  async function loadReviews() {
+    try {
+      const res = await fetch(FEED_URL);
+      const text = await res.text();
+      // convert google's wrapper to JSON
+      const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf(')')));
+      const rows = (json.table.rows || []);
+      publicContainer.innerHTML = "";
+
+      rows.forEach(r => {
+        // Column mapping (A=timestamp, B=name, C=email, D=review, E=rating, F=privateFeedback)
+        const name = r.c[1]?.v || "Anonymous";
+        const review = r.c[3]?.v || "";
+        const rating = Number(r.c[4]?.v || 0);
+        const privateFeedback = r.c[5]?.v || "";
+
+        // Show only 4-5 star items and skip private feedback rows
+        if (rating >= 4 && review && (!privateFeedback || privateFeedback.trim() === "")) {
+          const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+          publicContainer.innerHTML += `
+            <div class="bg-gray-100 text-gray-800 p-4 rounded-xl shadow">
+              <div class="text-yellow-500 text-lg">${stars}</div>
+              <p class="mt-2">${escapeHtml(review)}</p>
+              <div class="mt-2 text-sm text-gray-600">— ${escapeHtml(name)}</div>
+            </div>`;
+        }
+      });
+    } catch (err) {
+      // ignore silently (sheet not public/published yet)
+    }
+  }
+
+  // initial load
+  loadReviews();
 });
-
-// Show only 4–5★ reviews publicly
-const FEED_URL =
-  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq` +
-  `?sheet=${encodeURIComponent(SHEET_NAME)}` +
-  `&tqx=out:json&tq=${encodeURIComponent('select * order by A desc')}`;
-
-function escapeHtml(s) {
-  return (s || "").replace(/[&<>"']/g, m => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-  }[m]));
-}
-
-async function loadReviews() {
-  try {
-    const res  = await fetch(FEED_URL);
-    const text = await res.text();
-
-    // Strip Google Visualization wrapper → JSON
-    const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf(')')));
-    const rows = (json.table.rows || []);
-
-    const container = document.getElementById("publicReviews");
-    container.innerHTML = "";
-
-    rows.forEach(r => {
-      const name    = r.c[1]?.v || "Anonymous";
-      const comment = r.c[3]?.v || "";
-      const rating  = Number(r.c[4]?.v || 0);
-
-      // Show only if 4–5★ and not private
-      if (rating >= 4 && comment && !comment.startsWith("PRIVATE:")) {
-        const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
-        container.innerHTML += `
-          <div class="bg-gray-100 text-gray-800 p-4 rounded-xl shadow">
-            <div class="text-yellow-500 text-lg">${stars}</div>
-            <p class="mt-2">${escapeHtml(comment)}</p>
-            <div class="mt-2 text-sm text-gray-600">— ${escapeHtml(name)}</div>
-          </div>`;
-      }
-    });
-  } catch (_) {
-    // silently ignore if sheet not public yet
-  }
-}
+</script>
 
 // Load public reviews on page open
 loadReviews();
