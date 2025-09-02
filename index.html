@@ -121,22 +121,21 @@
     </select>
   </div>
 
-  <!-- Hidden comment box -->
+ <!-- Positive Feedback (4–5 stars) -->
+<div id="positiveFeedbackBox" class="hidden mt-4">
+  <label for="commentBox" class="block text-gray-300 mb-2">What did you like?</label>
   <textarea id="commentBox" name="comment" rows="3"
-    class="w-full p-3 rounded bg-white/10 hidden"
-    placeholder="Tell us what you liked!"></textarea>
+    class="w-full p-3 rounded bg-gray-800 text-white focus:ring-2 focus:ring-yellow-400"
+    placeholder="Tell us what you liked..."></textarea>
 </div>
 
-<!-- Private Feedback (only shows if 3 stars or below) -->
+<!-- Private Feedback (1–3 stars) -->
 <div id="privateFeedbackBox" class="hidden mt-4">
   <label for="privateFeedback" class="block text-gray-300 mb-2">Private Feedback (only I can see this):</label>
-  <textarea id="privateFeedback" rows="3" 
+  <textarea id="privateFeedback" name="privateFeedback" rows="3"
     class="w-full p-3 rounded bg-gray-800 text-white focus:ring-2 focus:ring-yellow-400"
     placeholder="What could I improve?"></textarea>
 </div>
-      <button type="submit" class="bg-white text-[#08172F] px-6 py-2 rounded-lg font-semibold">Submit review</button>
-      <p id="reviewMsg" class="mt-2 text-sm text-gray-400"></p>
-    </form>
 
     <!-- Public 4–5★ reviews appear here -->
     <div class="mt-8">
@@ -234,26 +233,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Safety: if elements missing, stop
   if (!ratingSelect || !form || !publicContainer) return;
 
- // Toggle review boxes based on rating
+
+// Toggle review boxes based on rating
 ratingSelect.addEventListener("change", () => {
   const val = Number(ratingSelect.value) || 0;
 
   if (val >= 4) {
-    // 4–5★ → ask for comment in a popup
-    const userComment = prompt("Awesome! Could you leave a quick comment about what you liked?");
-    if (userComment && userComment.trim()) {
-      commentBox.value = userComment.trim();
-    }
-    commentBox.classList.add("hidden"); // keep hidden so it looks secret
-    privateFeedbackBox.classList.add("hidden");
+    // Show positive feedback box
+    document.getElementById("positiveFeedbackBox").classList.remove("hidden");
+    document.getElementById("privateFeedbackBox").classList.add("hidden");
   } else if (val > 0 && val <= 3) {
-    // 1–3★ → private feedback box shows
-    privateFeedbackBox.classList.remove("hidden");
-    commentBox.classList.add("hidden");
+    // Show private feedback box
+    document.getElementById("privateFeedbackBox").classList.remove("hidden");
+    document.getElementById("positiveFeedbackBox").classList.add("hidden");
   } else {
-    // nothing selected
-    commentBox.classList.add("hidden");
-    privateFeedbackBox.classList.add("hidden");
+    // Hide both if nothing selected
+    document.getElementById("positiveFeedbackBox").classList.add("hidden");
+    document.getElementById("privateFeedbackBox").classList.add("hidden");
   }
 });
 
