@@ -222,7 +222,28 @@ const SHEET_ID    = "1ywHtna9t8V6nt7105qhKhfjs1PEq5temkJS3YzjZbRM";    // from y
 /* ======================================== */
 
 const SHEET_NAME = "Reviews"; // must match tab name
+// Toggle comment/private feedback boxes based on rating
+const ratingSelect = document.getElementById("ratingSelect");
+const commentBox = document.getElementById("commentBox");
+const privateFeedbackBox = document.getElementById("privateFeedbackBox");
 
+ratingSelect.addEventListener("change", () => {
+  const rating = Number(ratingSelect.value);
+
+  if (rating >= 4) {
+    // Show comment box for 4–5★ reviews
+    commentBox.classList.remove("hidden");
+    privateFeedbackBox.classList.add("hidden");
+  } else if (rating <= 3 && rating > 0) {
+    // Show private feedback for ≤3★ reviews
+    privateFeedbackBox.classList.remove("hidden");
+    commentBox.classList.add("hidden");
+  } else {
+    // Hide everything if nothing selected
+    commentBox.classList.add("hidden");
+    privateFeedbackBox.classList.add("hidden");
+  }
+});
 // Submit review to Google Apps Script → Sheet
 const form = document.getElementById("reviewForm");
 const msg  = document.getElementById("reviewMsg");
