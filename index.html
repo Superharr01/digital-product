@@ -234,20 +234,28 @@ document.addEventListener("DOMContentLoaded", () => {
   // Safety: if elements missing, stop
   if (!ratingSelect || !form || !publicContainer) return;
 
-  // Toggle comment / private boxes based on rating selection
-  ratingSelect.addEventListener("change", () => {
-    const val = Number(ratingSelect.value) || 0;
-    if (val >= 4) {
-      commentBox.classList.remove("hidden");
-      privateFeedbackBox.classList.add("hidden");
-    } else if (val > 0 && val <= 3) {
-      privateFeedbackBox.classList.remove("hidden");
-      commentBox.classList.add("hidden");
-    } else {
-      commentBox.classList.add("hidden");
-      privateFeedbackBox.classList.add("hidden");
+ // Toggle review boxes based on rating
+ratingSelect.addEventListener("change", () => {
+  const val = Number(ratingSelect.value) || 0;
+
+  if (val >= 4) {
+    // 4–5★ → ask for comment in a popup
+    const userComment = prompt("Awesome! Could you leave a quick comment about what you liked?");
+    if (userComment && userComment.trim()) {
+      commentBox.value = userComment.trim();
     }
-  });
+    commentBox.classList.add("hidden"); // keep hidden so it looks secret
+    privateFeedbackBox.classList.add("hidden");
+  } else if (val > 0 && val <= 3) {
+    // 1–3★ → private feedback box shows
+    privateFeedbackBox.classList.remove("hidden");
+    commentBox.classList.add("hidden");
+  } else {
+    // nothing selected
+    commentBox.classList.add("hidden");
+    privateFeedbackBox.classList.add("hidden");
+  }
+});
 
   // Form submit handler: sends to Apps Script
   form.addEventListener("submit", async (e) => {
