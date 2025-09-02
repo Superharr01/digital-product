@@ -54,8 +54,8 @@
       <h2 class="text-2xl font-bold mb-3">What you get</h2>
       <ul class="text-gray-200 space-y-2">
         <li>• Clear actionable steps you can follow every day.</li>
-        <li>• Reset strategies for when you miss days.</li>
-        <li>• Environment & accountability templates you can copy.</li>
+        <li>• Explanations why these actionable steps work.</li>
+        <li>• Environment, mindset & accountability .</li>
       </ul>
 
       <div class="mt-6">
@@ -127,7 +127,13 @@
     placeholder="Tell us what you liked!"></textarea>
 </div>
 
-
+<!-- Private Feedback (only shows if 3 stars or below) -->
+<div id="privateFeedbackBox" class="hidden mt-4">
+  <label for="privateFeedback" class="block text-gray-300 mb-2">Private Feedback (only I can see this):</label>
+  <textarea id="privateFeedback" rows="3" 
+    class="w-full p-3 rounded bg-gray-800 text-white focus:ring-2 focus:ring-yellow-400"
+    placeholder="What could I improve?"></textarea>
+</div>
       <button type="submit" class="bg-white text-[#08172F] px-6 py-2 rounded-lg font-semibold">Submit review</button>
       <p id="reviewMsg" class="mt-2 text-sm text-gray-400"></p>
     </form>
@@ -227,8 +233,16 @@ form.addEventListener("submit", async (e) => {
   const fd = new FormData(form);
   const rating = Number(fd.get("rating") || 0);
   const comment = (fd.get("comment") || "").trim();
+  const privateFeedback = (document.getElementById("privateFeedback").value || "").trim();
 
   try {
+    // If 3 stars or less → mark feedback as PRIVATE
+    if (rating <= 3) {
+      fd.set("comment", "PRIVATE: " + privateFeedback);
+    } else {
+      fd.set("comment", comment);
+    }
+
     await fetch(WEB_APP_URL, {
       method: "POST",
       body: fd,
@@ -237,6 +251,8 @@ form.addEventListener("submit", async (e) => {
 
     msg.textContent = "Thanks! Your review was submitted.";
     form.reset();
+    document.getElementById("commentBox").classList.add("hidden");
+    document.getElementById("privateFeedbackBox").classList.add("hidden");
     loadReviews(); // refresh public list
   } catch (err) {
     msg.textContent = "Something went wrong. Try again in a minute.";
@@ -272,7 +288,8 @@ async function loadReviews() {
       const comment = r.c[3]?.v || "";
       const rating  = Number(r.c[4]?.v || 0);
 
-      if (rating >= 4 && comment) {
+      // Show only if 4–5★ and not private
+      if (rating >= 4 && comment && !comment.startsWith("PRIVATE:")) {
         const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
         container.innerHTML += `
           <div class="bg-gray-100 text-gray-800 p-4 rounded-xl shadow">
@@ -289,27 +306,6 @@ async function loadReviews() {
 
 // Load public reviews on page open
 loadReviews();
-</script>
-
-// Load public reviews on page open
-loadReviews();
-</script>
-  <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const ratingSelect = document.querySelector('select[name="rating"]');
-  const commentBox = document.getElementById("commentBox");
-
-  if (ratingSelect) {
-    ratingSelect.addEventListener("change", function() {
-      if (this.value >= 4) {
-        commentBox.classList.remove("hidden"); // show if 4–5 stars
-      } else {
-        commentBox.classList.add("hidden"); // hide if 1–3 stars
-        commentBox.value = ""; // clear text
-      }
-    });
-  }
-});
 </script>
 
 </body>
